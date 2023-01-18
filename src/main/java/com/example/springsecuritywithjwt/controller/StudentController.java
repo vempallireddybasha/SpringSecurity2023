@@ -1,10 +1,20 @@
 package com.example.springsecuritywithjwt.controller;
 
 import com.example.springsecuritywithjwt.entity.Student;
+import com.example.springsecuritywithjwt.jwt.JwtFilter;
+import com.example.springsecuritywithjwt.jwt.JwtRequest;
+import com.example.springsecuritywithjwt.jwt.JwtResponse;
+import com.example.springsecuritywithjwt.jwt.JwtUtil;
+import com.example.springsecuritywithjwt.service.CustomUserDetails;
 import com.example.springsecuritywithjwt.service.StudentService;
 
+import io.jsonwebtoken.JwtException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,34 +34,51 @@ public class StudentController {
     @Autowired
     private StudentService studentService;
 
-//    @Autowired
-//    private AuthenticationManager  authenticationManager;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
    @GetMapping("/hello")
     public  String hello(){
        System.out.println("inside hello method");
         return "Welcome to Spring Security";
     }
 
-//    @PostMapping("/authenticate")
-//    public JwtResponse jwtsavestudent(@RequestBody Student  student){
-////        student.setRoles("ROLE_USER");
-////        student.setPassword(passwordEncoder.encode(student.getPassword()));
-////        studentService.saveStudent(student);
-//        Authentication authenticate;
-//        try {
-//           authenticate = authenticationManager
-//                  .authenticate(new UsernamePasswordAuthenticationToken(student.getName(), student.getPassword()));
-//      }catch (JwtException e){
-//          throw new JwtException("Bad Credentials");
-//      }
-//        Student student1 = studentService.findStudent(authenticate.getName());
-//       // UserDetails userDetails = studentService.loadUserByUsername(authenticate.getName());
-//        String s = jwtUtil.generateToken(new CustomUserDetails(student1));
-//        return  new JwtResponse(s);
-//    }
+    @GetMapping("/validate")
+   // @PreAuthorize("hasRole('ROLE_USER')")
+    public  String validate(){
+       // System.out.println("inside hello method");
+        return "Welcome to Spring Security with JWT Token";
+    }
+
+    @PostMapping("/authenticate")
+
+    public JwtResponse jwtsavestudent(@RequestBody JwtRequest  jwtRequest){
+//        student.setRoles("ROLE_USER");
+//        student.setPassword(passwordEncoder.encode(student.getPassword()));
+//       Student student1= studentService.saveStudent(student);
+        Authentication authenticate;
+//        JwtRequest jwtRequest=new JwtRequest();
+//        jwtRequest.setName(student1.getName());
+//        jwtRequest.setPassword(student1.getPassword());
+        try {
+           authenticate = authenticationManager
+                  .authenticate(new UsernamePasswordAuthenticationToken(jwtRequest.getName(), jwtRequest.getPassword()));
+      }catch (Exception e){
+            System.out.println(e.getMessage());
+          throw new JwtException("Bad Credentials");
+
+      }
+       // Student student1 = studentService.findStudent(authenticate.getName());
+        UserDetails userDetails = studentService.loadUserByUsername(authenticate.getName());
+        String s = jwtUtil.generateToken(userDetails);
+        return  new JwtResponse(s);
+    }
     @PostMapping("/save")
     public String saveStudent(@RequestBody Student student){
         System.out.println(student);
